@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-gray-950 text-white font-sans;
+    margin: 0;
+    padding: 0;
+  }
+}
