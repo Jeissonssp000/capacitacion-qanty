@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Desktop from './components/Desktop';
 import Terminal from './components/Terminal';
 import Sidebar from './components/Sidebar';
@@ -22,26 +22,29 @@ const LESSONS = [
       { label: ".", value: "." },
       { label: "Escritorio/", value: "Escritorio/" },
       { label: "Documentos/", value: "Documentos/" },
+      { label: "documentos", value: "documentos" },
       { label: "Descargas/", value: "Descargas/" }
     ]
   },
   {
     title: "Comando ping",
-    description: "El comando ping comprueba la conexión con otro equipo en la red o internet enviando paquetes de datos.",
+    description: "El comando ping comprueba la conexión enviando paquetes. Prueba casos exitosos o errores como host desconocido, inalcanzable o timeout.",
     buttons: [
-      { label: "ping", value: "ping" },
-      { label: "google.com", value: "google.com" },
-      { label: "127.0.0.1", value: "127.0.0.1" },
-      { label: "-c 4", value: "-c 4" }
+      { label: "ping google.com", value: "ping google.com" },
+      { label: "ping error.com", value: "ping error.com" },
+      { label: "ping 193.169.0.254", value: "ping 193.169.0.254" },
+      { label: "ping timeout.com", value: "ping timeout.com" },
+      { label: "ping -c 4 127.0.0.1", value: "ping -c 4 127.0.0.1" }
     ]
   },
   {
     title: "Comando ip",
-    description: "Muestra la configuración de red y la dirección IP asignada a tu máquina.",
+    description: "Muestra la configuración de red y la dirección IP asignada a tu máquina. 'ifconfig' es más antiguo, mientras que 'ip' es el estándar moderno.",
     buttons: [
       { label: "ifconfig", value: "ifconfig" },
       { label: "ip addr", value: "ip addr" },
-      { label: "ip a", value: "ip a" }
+      { label: "ip a", value: "ip a" },
+      { label: "hostname -I", value: "hostname -I" }
     ]
   }
 ];
@@ -78,54 +81,68 @@ const COMMAND_RESPONSES = [
     response: ""
   },
   {
-    id: "ping_google",
-    command: "ping google.com",
-    response: `PING google.com (142.250.190.46) 56(84) bytes of data.
-64 bytes from 142.250.190.46: icmp_seq=1 ttl=115 time=20.4 ms
-64 bytes from 142.250.190.46: icmp_seq=2 ttl=115 time=21.1 ms`
-  },
-  {
-    id: "ping_localhost",
-    command: "ping 127.0.0.1",
-    response: `PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
-64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.035 ms
-64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.041 ms`
-  },
-  {
-    id: "ping_c4",
-    command: "ping -c 4 google.com",
-    response: `PING google.com (142.250.190.46) 56(84) bytes of data.
-64 bytes from 142.250.190.46: icmp_seq=1 ttl=115 time=20.4 ms
-64 bytes from 142.250.190.46: icmp_seq=2 ttl=115 time=20.9 ms
-64 bytes from 142.250.190.46: icmp_seq=3 ttl=115 time=21.2 ms
-64 bytes from 142.250.190.46: icmp_seq=4 ttl=115 time=20.8 ms
-
---- google.com ping statistics ---
-4 packets transmitted, 4 received, 0% packet loss, time 3004ms`
-  },
-  {
     id: "ifconfig",
     command: "ifconfig",
-    response: `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN 
-    inet 127.0.0.1/8 scope host lo
-2: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP 
-    inet 192.168.1.10/24 brd 192.168.1.255 scope global dynamic wlan0`
+    response: `lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 20381  bytes 3145698 (3.1 MB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 20381  bytes 3145698 (3.1 MB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 193.169.1.12  netmask 255.255.255.0  broadcast 193.169.1.255
+        inet6 fe80::5054:ff:fe12:3456  prefixlen 64  scopeid 0x20<link>
+        ether 52:54:00:12:34:56  txqueuelen 1000  (Ethernet)
+        RX packets 1453221  bytes 1834928192 (1.8 GB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 854321  bytes 93218931 (93.2 MB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0`
   },
   {
     id: "ip_addr",
     command: "ip addr",
-    response: `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN 
+    response: `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
     inet 127.0.0.1/8 scope host lo
-2: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP 
-    inet 192.168.1.10/24 brd 192.168.1.255 scope global dynamic wlan0`
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 52:54:00:12:34:56 brd ff:ff:ff:ff:ff:ff
+    inet 193.169.1.12/24 brd 193.169.1.255 scope global dynamic wlan0
+       valid_lft 86399sec preferred_lft 86399sec
+    inet6 fe80::5054:ff:fe12:3456/64 scope link 
+       valid_lft forever preferred_lft forever`
   },
   {
     id: "ip_a",
     command: "ip a",
-    response: `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN 
+    response: `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
     inet 127.0.0.1/8 scope host lo
-2: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP 
-    inet 192.168.1.10/24 brd 192.168.1.255 scope global dynamic wlan0`
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 52:54:00:12:34:56 brd ff:ff:ff:ff:ff:ff
+    inet 193.169.1.12/24 brd 193.169.1.255 scope global dynamic wlan0
+       valid_lft 86399sec preferred_lft 86399sec
+    inet6 fe80::5054:ff:fe12:3456/64 scope link 
+       valid_lft forever preferred_lft forever`
+  },
+  {
+    id: "hostname_i",
+    command: "hostname -I",
+    response: "193.169.1.12"
+  },
+  {
+    id: "ip_route",
+    command: "ip route",
+    response: `default via 193.169.1.1 dev wlan0 proto dhcp metric 600 
+193.169.1.0/24 dev wlan0 proto kernel scope link src 193.169.1.12 metric 600`
   }
 ];
 
@@ -138,15 +155,41 @@ const mockCommandResponse = (cmd, state) => {
     return currentDirectory === "~" ? "/home/qanty" : `/home/qanty/${currentDirectory.replace('~/', '')}`;
   }
 
-  if (c === "ls" || c === "ls -a") {
-    const isAll = c === "ls -a";
-    if (currentDirectory === "~") {
+  if (c.startsWith("ls")) {
+    const args = c.split(" ").filter(Boolean);
+    const isAll = args.includes("-a");
+    const dirArg = args.find(a => a !== "ls" && a !== "-a");
+    
+    let targetDir = currentDirectory;
+    if (dirArg) {
+      const cleanDir = dirArg.replace(/\/$/, ""); 
+      if (cleanDir === "Documentos" || cleanDir === "Escritorio" || cleanDir === "Descargas") {
+        if (currentDirectory === "~") targetDir = `~/${cleanDir}`;
+        else return `ls: no se puede acceder a '${dirArg}': No existe el archivo o el directorio`;
+      } else if (cleanDir === "..") {
+        if (currentDirectory === "~") {
+           return isAll ? ".  ..  qanty" : "qanty";
+        } else {
+           targetDir = "~";
+        }
+      } else if (cleanDir === ".") {
+        targetDir = currentDirectory;
+      } else if (cleanDir === "~") {
+        targetDir = "~";
+      } else if (cleanDir === "/") {
+        return isAll ? ".  ..  bin  boot  dev  etc  home  lib  opt  root  run  sbin  tmp  usr  var" : "bin  boot  dev  etc  home  lib  opt  root  run  sbin  tmp  usr  var";
+      } else {
+        return `ls: no se puede acceder a '${dirArg}': No existe el archivo o el directorio`;
+      }
+    }
+
+    if (targetDir === "~") {
       return isAll ? ".  ..  .bashrc  Escritorio  Documentos  Descargas" : "Escritorio  Documentos  Descargas";
-    } else if (currentDirectory === "~/Escritorio") {
+    } else if (targetDir === "~/Escritorio") {
       return isAll ? ".  ..  Terminal.desktop" : "Terminal.desktop";
-    } else if (currentDirectory === "~/Descargas") {
+    } else if (targetDir === "~/Descargas") {
       return isAll ? ".  ..  .oculto" : "";
-    } else if (currentDirectory === "~/Documentos") {
+    } else if (targetDir === "~/Documentos") {
       return isAll ? ".  .." : "";
     }
     return "";
@@ -176,16 +219,6 @@ const mockCommandResponse = (cmd, state) => {
     return `bash: cd: ${dir}: No existe el archivo o el directorio`;
   }
 
-  if (c.startsWith("ping")) {
-    const isGoogle = c.includes("google.com");
-    if (isGoogle && !isInternetConnected) {
-      return `ping: ${c.split(" ")[c.split(" ").length - 1]}: Fallo temporal en la resolución del nombre`;
-    }
-    const found = COMMAND_RESPONSES.find(item => item.command === c);
-    if (found) return found.response;
-    return `ping: ${c.split(" ")[c.split(" ").length - 1]}: Name or service not known`;
-  }
-
   const found = COMMAND_RESPONSES.find(item => item.command === c);
   if (found) {
     return found.response;
@@ -201,28 +234,130 @@ const mockCommandResponse = (cmd, state) => {
 
 export default function App() {
   const [currentClass, setCurrentClass] = useState(0);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
   const [currentInput, setCurrentInput] = useState("");
   const [history, setHistory] = useState([]);
   const [currentDirectory, setCurrentDirectory] = useState("~");
   const [isInternetConnected, setIsInternetConnected] = useState(true);
+  const [isRunning, setIsRunning] = useState(false);
+  const [explanation, setExplanation] = useState(null);
+  const intervalRef = useRef(null);
+  const pingStatsRef = useRef(null);
+
+  useEffect(() => {
+    setExplanation(null);
+  }, [currentClass]);
+
+  const stopProcess = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setIsRunning(false);
+  };
+
+  const handleTerminalClose = () => {
+    stopProcess();
+    setIsTerminalOpen(false);
+  };
+
+  const stopPing = (completedNormally = false) => {
+    stopProcess();
+    if (pingStatsRef.current) {
+      const { target, count, maxCount, isTimeout, isUnreachable } = pingStatsRef.current;
+      const loss = (isTimeout || isUnreachable) ? "100" : "0";
+      const recv = (isTimeout || isUnreachable) ? "0" : count;
+      const prefix = completedNormally ? "" : "^C\n";
+      setHistory(prev => [...prev, { 
+        text: `${prefix}--- ${target} ping statistics ---\n${count} packets transmitted, ${recv} received, ${loss}% packet loss, time ${count * 1000}ms`, 
+        isCommand: false 
+      }]);
+      pingStatsRef.current = null;
+    }
+  };
+
+  const startPingCommand = (cmd) => {
+    const args = cmd.split(" ").filter(Boolean);
+    const target = args[args.length - 1];
+
+    if (target === "ping" || target.startsWith("-")) {
+      setHistory(prev => [...prev, { text: `ping: falta el operando de destino\nPruebe 'ping -h' para más información.`, isCommand: false }]);
+      return;
+    }
+
+    const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(target);
+    const isLocal = target === "127.0.0.1" || target.startsWith("193.169.");
+    
+    if (!isInternetConnected && !isLocal && !isIp) {
+      setHistory(prev => [...prev, { text: `ping: ${target}: Nombre o servicio desconocido`, isCommand: false }]);
+      setExplanation(`El error "Nombre o servicio desconocido" ocurre porque el sistema no puede traducir el dominio "${target}" a una dirección IP (DNS). Esto suele pasar al no tener conexión a internet o si el dominio no existe.`);
+      return;
+    }
+
+    if (target === "error.com" || target === "unknown.local") {
+      setHistory(prev => [...prev, { text: `ping: ${target}: Nombre o servicio desconocido`, isCommand: false }]);
+      setExplanation(`El error "Nombre o servicio desconocido" significa que el servidor DNS no tiene un registro para el dominio "${target}". Es como intentar llamar a alguien que no está en la guía telefónica.`);
+      return;
+    }
+
+    setIsRunning(true);
+    
+    const isCountIndex = args.indexOf("-c");
+    let maxCount = Infinity;
+    if (isCountIndex !== -1 && args[isCountIndex + 1]) {
+      maxCount = parseInt(args[isCountIndex + 1]) || Infinity;
+    }
+
+    let ip = "172.217.30.206";
+    let isTimeout = target === "timeout.com";
+    let isUnreachable = target === "193.169.0.254" || target === "unreachable.com";
+
+    if (target === "127.0.0.1") {
+      ip = "127.0.0.1";
+    } else if (isIp) {
+      ip = target;
+    } else if (isTimeout) {
+      ip = "93.184.216.34";
+    } else if (isUnreachable) {
+      ip = "10.255.255.1";
+    }
+
+    let currentExplanation = "";
+    if (isTimeout) {
+        currentExplanation = `En este escenario ("${target}"), los paquetes se envían pero no hay respuesta. La terminal se queda esperando silenciosamente. Al cancelar (Ctrl+C), verás un "100% packet loss" (pérdida). Esto pasa si un firewall bloquea los pings o si el servidor remoto está apagado.`;
+    } else if (isUnreachable) {
+        currentExplanation = `El error "Destination Host Unreachable" (Destino inalcanzable) indica que el router no sabe cómo llegar a "${target}" o el equipo no existe en esa red local. El ping ni siquiera logra salir hacia el destino final.`;
+    } else {
+        currentExplanation = `Un ping exitoso muestra la respuesta de cada paquete.\n• bytes: Tamaño del paquete (64 bytes).\n• icmp_seq: Secuencia del paquete enviado.\n• ttl (Time To Live): Cuántos "saltos" por routers puede dar el paquete antes de expirar.\n• time: Tiempo que tardó en ir y volver (latencia).`;
+    }
+    setExplanation(currentExplanation);
+
+    pingStatsRef.current = { target, count: 0, maxCount, isTimeout, isUnreachable };
+    
+    setHistory(prev => [...prev, { text: `PING ${target} (${ip}) 56(84) bytes of data.`, isCommand: false }]);
+
+    intervalRef.current = setInterval(() => {
+      pingStatsRef.current.count++;
+      const { count } = pingStatsRef.current;
+      
+      if (isUnreachable) {
+        setHistory(prev => [...prev, { text: `From 193.169.1.12 icmp_seq=${count} Destination Host Unreachable`, isCommand: false }]);
+      } else if (!isTimeout) {
+        const time = ip === "127.0.0.1" ? "0.0" + Math.floor(Math.random() * 90 + 10) : (12 + Math.random() * 2).toFixed(1);
+        const ttl = ip === "127.0.0.1" ? 64 : 117;
+        let pnboga = ip === "172.217.30.206" ? "pnboga-af-in-f14.1e100.net " : "";
+        setHistory(prev => [...prev, { text: `64 bytes from ${pnboga}(${ip}): icmp_seq=${count} ttl=${ttl} time=${time} ms`, isCommand: false }]);
+      }
+
+      if (count >= maxCount) {
+        stopPing(true);
+      }
+    }, 1000);
+  };
 
   useEffect(() => {
     setHistory([{ text: "Bienvenido a Linux Mint 21.2 Cinnamon 64-bit", isCommand: false }]);
-  }, []);
-
-  // Handle Resize for Sidebar
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsSidebarOpen(true);
-      } else {
-        setIsSidebarOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleTerminalOpen = () => {
@@ -236,8 +371,19 @@ export default function App() {
     if (action === "ctrl+alt+t") {
       handleTerminalOpen();
     } else if (action === "clean" && isTerminalOpen) {
+      if (isRunning) {
+        if (pingStatsRef.current) {
+          stopPing(false);
+        } else {
+          stopProcess();
+          setHistory(prev => [...prev, { text: "^C", isCommand: false }]);
+        }
+      } else {
+        setHistory(prev => [...prev, { text: currentInput + "^C", isCommand: true, dir: currentDirectory }]);
+      }
       setCurrentInput("");
     } else if (action === "enter" && isTerminalOpen) {
+      if (isRunning) return;
       const finalInput = currentInput.trim();
 
       if (!finalInput) {
@@ -246,6 +392,41 @@ export default function App() {
       }
 
       setHistory(prev => [...prev, { text: finalInput, isCommand: true, dir: currentDirectory }]);
+
+      if (finalInput.startsWith("ping")) {
+        startPingCommand(finalInput);
+        setCurrentInput("");
+        return;
+      }
+
+      if (finalInput.startsWith("ls")) {
+        const isAll = finalInput.includes("-a");
+        const hasDir = finalInput.split(" ").length > (isAll ? 2 : 1);
+        let exp = `El comando 'ls' (list) muestra los archivos en la carpeta actual.\nEn linux los archivos y carpetas que empiezan con un punto '.' son ocultos y no son visibles con el comando 'ls' sin la opcion '-a'.`;
+        if (hasDir) {
+           exp += `\nAl pasarle una ruta específica como argumento (ej. 'ls Documentos/'), 'ls' mostrará el contenido de esa ruta en lugar de la actual sin tener que moverte hacia ella.`;
+        }
+        setExplanation(exp);
+      } else if (finalInput === "pwd") {
+        setExplanation(`'pwd' (print working directory) muestra la ruta completa de la carpeta en la que te encuentras actualmente.`);
+      } else if (finalInput.startsWith("cd")) {
+        const dir = finalInput.split(" ")[1];
+        if (dir === "documentos/" || dir === "documentos") {
+          setExplanation(`Recibes un error porque Linux diferencia mayúsculas de minúsculas (case-sensitive). La carpeta correcta es "Documentos" con 'D' mayúscula, por lo que "documentos" no existe.`);
+        } else {
+          setExplanation(`'cd' (change directory) sirve para moverte de carpeta. Un error común es escribir una carpeta que no existe o equivocarse de mayúsculas/minúsculas.\nCuando no se especifica una ruta te lleva a la carpeta principal, representada con '~'`);
+        }
+      } else if (finalInput.startsWith("ifconfig") || finalInput.startsWith("ip") || finalInput.startsWith("hostname")) {
+        if (finalInput === "hostname -I") {
+           setExplanation(`'hostname -I' es la forma más rápida y limpia de ver solo tu dirección IP, sin toda la información extra de las interfaces de red.`);
+        } else if (finalInput === "ifconfig") {
+           setExplanation(`'ifconfig' (interface configuration) es un comando antiguo pero muy conocido. Tu IP es la que está al lado de 'inet' bajo la interfaz 'wlan0' o 'eth0'.`);
+        } else {
+           setExplanation(`'ip a' (o 'ip addr') es el estándar moderno en Linux para ver la configuración de red y las direcciones IPs de tu equipo.`);
+        }
+      } else {
+        setExplanation(null);
+      }
 
       const res = mockCommandResponse(finalInput, { currentDirectory, isInternetConnected });
       if (res && res.type === "cd") {
@@ -259,7 +440,7 @@ export default function App() {
   };
 
   const handleType = (text) => {
-    if (!isTerminalOpen) return;
+    if (!isTerminalOpen || isRunning) return;
     setCurrentInput(prev => {
       let next = prev + text + " ";
       // sanitización de espacios extra
@@ -268,6 +449,11 @@ export default function App() {
       if (next.startsWith(' ')) next = next.slice(1);
       return next;
     });
+  };
+
+  const handleInputChange = (text) => {
+    if (!isTerminalOpen || isRunning) return;
+    setCurrentInput(text);
   };
 
   return (
@@ -286,9 +472,14 @@ export default function App() {
             >
               <Terminal
                 isOpen={isTerminalOpen}
-                onClose={() => setIsTerminalOpen(false)}
+                onClose={handleTerminalClose}
                 history={history}
                 currentDirectory={currentDirectory}
+                currentInput={currentInput}
+                isRunning={isRunning}
+                onType={handleInputChange}
+                onEnter={() => handleAction('enter')}
+                onCtrlC={() => handleAction('clean')}
               />
             </Desktop>
           </div>
@@ -304,6 +495,7 @@ export default function App() {
               isSidebarOpen={isSidebarOpen}
               onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
               currentDirectory={currentDirectory}
+              explanation={explanation}
             />
           </div>
 
