@@ -3,6 +3,7 @@ import Desktop from './components/Desktop';
 import Terminal from './components/Terminal';
 import Sidebar from './components/Sidebar';
 import BottomInterface from './components/BottomInterface';
+import confetti from 'canvas-confetti';
 
 const LESSONS = [
   {
@@ -46,6 +47,20 @@ const LESSONS = [
       { label: "ip a", value: "ip a" },
       { label: "hostname -I", value: "hostname -I" }
     ]
+  },
+  {
+    title: "Reto 1: La Contraseña Oculta",
+    description: "Un administrador olvidó la contraseña de acceso en el sistema; por ahí dicen que la guardó en la carpeta de documentos, recuerda que usando 'cd' puedes navegar entre carpetas, 'ls' puedes ver archivos y con 'cat' puedes ver su contenido.",
+    buttons: [
+      { label: "cd", value: "cd" },
+      { label: "pwd", value: "pwd" },
+      { label: "ls", value: "ls" },
+      { label: "ls -a", value: "ls -a" },
+      { label: "cat", value: "cat" },
+      { label: "Documentos", value: "Documentos/" },
+      { label: ".secret_password.txt", value: ".secret_password.txt" }
+    ],
+    isChallenge: true
   }
 ];
 
@@ -190,7 +205,7 @@ const mockCommandResponse = (cmd, state) => {
     } else if (targetDir === "~/Descargas") {
       return isAll ? ".  ..  .oculto" : "";
     } else if (targetDir === "~/Documentos") {
-      return isAll ? ".  .." : "";
+      return isAll ? ".  ..  .secret_password.txt" : "";
     }
     return "";
   }
@@ -224,6 +239,14 @@ const mockCommandResponse = (cmd, state) => {
     return found.response;
   }
 
+  if (c === "cat .secret_password.txt") {
+     if (currentDirectory === "~/Documentos") {
+        return "¡Contraseña descifrada!\n Contraseña: qanty2026_super_secret";
+     } else {
+        return "cat: .secret_password.txt: No existe el archivo o el directorio";
+     }
+  }
+
   if (c.startsWith("cd ")) {
     const dir = c.split(" ")[1];
     return `bash: cd: ${dir}: No existe el archivo o el directorio`;
@@ -242,11 +265,15 @@ export default function App() {
   const [isInternetConnected, setIsInternetConnected] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
   const [explanation, setExplanation] = useState(null);
+  const [challenge1Completed, setChallenge1Completed] = useState(false);
+  const [secretFileDiscovered, setSecretFileDiscovered] = useState(false);
   const intervalRef = useRef(null);
   const pingStatsRef = useRef(null);
 
   useEffect(() => {
     setExplanation(null);
+    setChallenge1Completed(false);
+    setSecretFileDiscovered(false);
   }, [currentClass]);
 
   const stopProcess = () => {
@@ -368,6 +395,10 @@ export default function App() {
   };
 
   const handleAction = (action) => {
+    if (action === "next_lesson") {
+      setCurrentClass(Math.min(currentClass + 1, LESSONS.length - 1));
+      return;
+    }
     if (action === "ctrl+alt+t") {
       handleTerminalOpen();
     } else if (action === "clean" && isTerminalOpen) {
@@ -407,6 +438,11 @@ export default function App() {
            exp += `\nAl pasarle una ruta específica como argumento (ej. 'ls Documentos/'), 'ls' mostrará el contenido de esa ruta en lugar de la actual sin tener que moverte hacia ella.`;
         }
         setExplanation(exp);
+        
+        // Reto 1: Secret file discovery
+        if (isAll && (currentDirectory === "~/Documentos" || finalInput.includes("Documentos"))) {
+          setSecretFileDiscovered(true);
+        }
       } else if (finalInput === "pwd") {
         setExplanation(`'pwd' (print working directory) muestra la ruta completa de la carpeta en la que te encuentras actualmente.`);
       } else if (finalInput.startsWith("cd")) {
@@ -433,6 +469,17 @@ export default function App() {
         setCurrentDirectory(res.newDir);
       } else if (res !== null && res !== "") {
         setHistory(prev => [...prev, { text: res, isCommand: false }]);
+        if (finalInput === "cat .secret_password.txt" && currentDirectory === "~/Documentos") {
+          if (!challenge1Completed) {
+            setChallenge1Completed(true);
+            confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 },
+              zIndex: 1000
+            });
+          }
+        }
       }
 
       setCurrentInput("");
@@ -496,6 +543,9 @@ export default function App() {
               onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
               currentDirectory={currentDirectory}
               explanation={explanation}
+              challengeCompleted={challenge1Completed}
+              secretFileDiscovered={secretFileDiscovered}
+              isLastLesson={currentClass === LESSONS.length - 1}
             />
           </div>
 
