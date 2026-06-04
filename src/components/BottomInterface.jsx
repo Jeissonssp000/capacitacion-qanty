@@ -11,7 +11,7 @@ export default function BottomInterface({
   currentDirectory,
   explanation,
   challengeCompleted,
-  secretFileDiscovered,
+  discoveredButtons,
   isLastLesson
 }) {
   return (
@@ -30,7 +30,11 @@ export default function BottomInterface({
             <h3 className="font-bold text-white text-lg flex items-center gap-3">
               {lesson.title}
               {lesson.isChallenge && (
-                <span className={`px-2 py-0.5 text-xs font-bold rounded-full transition-colors duration-300 ${challengeCompleted ? 'bg-green-500 text-black shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-[#333] text-gray-400 border border-[#555]'}`}>
+                <span className={`px-2 py-0.5 text-xs font-bold rounded-full transition-colors duration-300 ${
+                  challengeCompleted
+                    ? 'bg-green-500 text-black shadow-[0_0_10px_rgba(34,197,94,0.5)]'
+                    : 'bg-[#333] text-gray-400 border border-[#555]'
+                }`}>
                   {challengeCompleted ? '[✓] ¡Completado!' : '[ ] Incompleto'}
                 </span>
               )}
@@ -53,16 +57,21 @@ export default function BottomInterface({
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-wrap gap-2 mb-4">
           {lesson.buttons.map((btn, i) => {
-            if (btn.value === ".secret_password.txt" && !secretFileDiscovered) return null;
+            // Generic hidden button logic: if the button is in hiddenButtons
+            // and hasn't been discovered yet, don't render it
+            if (lesson.hiddenButtons?.includes(btn.value) && !discoveredButtons[btn.value]) {
+              return null;
+            }
             return (
               <button
                 key={i}
                 onClick={() => isTerminalOpen && onType(btn.value || btn.label)}
                 disabled={!isTerminalOpen && btn.label !== "ctrl + alt + t"}
-                className={`px-4 py-2 rounded font-semibold text-sm transition-transform active:scale-95 shadow-md ${!isTerminalOpen && btn.label !== "ctrl + alt + t"
+                className={`px-4 py-2 rounded font-semibold text-sm transition-transform active:scale-95 shadow-md ${
+                  !isTerminalOpen && btn.label !== "ctrl + alt + t"
                     ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                     : 'bg-[#2d2d2d] text-gray-200 hover:bg-[#3d3d3d] border border-[#444]'
-                  }`}
+                }`}
               >
                 {btn.label}
               </button>
@@ -82,16 +91,18 @@ export default function BottomInterface({
         <button
           onClick={() => isTerminalOpen && onAction('clean')}
           disabled={!isTerminalOpen}
-          className={`flex-1 py-2 md:py-3 rounded font-bold transition-all active:scale-95 shadow-lg text-xs md:text-sm ${isTerminalOpen ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-800 text-gray-600'
-            }`}
+          className={`flex-1 py-2 md:py-3 rounded font-bold transition-all active:scale-95 shadow-lg text-xs md:text-sm ${
+            isTerminalOpen ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-gray-800 text-gray-600'
+          }`}
         >
           ctrl + c (cancelar)
         </button>
         <button
           onClick={() => isTerminalOpen && onAction('enter')}
           disabled={!isTerminalOpen}
-          className={`flex-1 py-2 md:py-3 rounded font-bold transition-all active:scale-95 shadow-lg text-xs md:text-sm ${isTerminalOpen ? 'bg-green-700 hover:bg-green-600 text-white' : 'bg-gray-800 text-gray-600'
-            }`}
+          className={`flex-1 py-2 md:py-3 rounded font-bold transition-all active:scale-95 shadow-lg text-xs md:text-sm ${
+            isTerminalOpen ? 'bg-green-700 hover:bg-green-600 text-white' : 'bg-gray-800 text-gray-600'
+          }`}
         >
           [ Enter ]
         </button>
@@ -100,7 +111,7 @@ export default function BottomInterface({
              onClick={() => onAction('next_lesson')}
              className="flex-1 py-2 md:py-3 rounded font-bold shadow-lg text-xs md:text-sm bg-gradient-to-r from-green-400 to-emerald-600 hover:from-green-500 hover:to-emerald-700 text-white animate-[fadeIn_0.5s_ease-out] transition-all active:scale-95"
           >
-            Próximo Reto
+            Siguiente Reto →
           </button>
         )}
       </div>
