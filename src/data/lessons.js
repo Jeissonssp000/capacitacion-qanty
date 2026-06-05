@@ -128,7 +128,9 @@ export const LESSONS = [
     buttons: [
       { label: "top", value: "top" },
       { label: "kill", value: "kill" },
+      { label: "123", value: "123" },
     ],
+    hiddenButtons: ["123"],
   },
 
   // ── Section 6: Permisos y Archivos ──────────────────────
@@ -183,17 +185,17 @@ export const LESSONS = [
   },
   {
     section: "retos",
-    title: "Reto 2: Mal Rendimiento",
+    title: "Reto 2: Equipo Lento",
     description:
       "El sistema se ha puesto extremadamente lento debido a un proceso colgado que está consumiendo toda la memoria; abre el administrador de tareas con 'top' para identificar el ID (PID) del servicio malicioso y elimínalo usando 'kill'.",
     buttons: [
       { label: "top", value: "top" },
       { label: "htop", value: "htop" },
       { label: "kill", value: "kill" },
-      { label: "2026", value: "2026" },
+      { label: "", value: "PID_INPUT", isInput: true, placeholder: "PID..." },
     ],
     isChallenge: true,
     challengeId: "challenge_3",
-    hiddenButtons: ["kill", "2026"],
+    hiddenButtons: ["PID_INPUT"],
   },
 ];

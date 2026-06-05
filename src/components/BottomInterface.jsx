@@ -1,4 +1,5 @@
 import { VscMenu, VscClose } from 'react-icons/vsc';
+import { useState } from 'react';
 
 export default function BottomInterface({
   lesson,
@@ -15,6 +16,8 @@ export default function BottomInterface({
   discoveredButtons,
   isLastLesson
 }) {
+  const [pidValue, setPidValue] = useState("");
+
   return (
     <div className="flex-1 bg-[#1a1a1a] border-t-2 border-[#333] p-4 flex flex-col justify-between select-none shadow-[0_-10px_20px_rgba(0,0,0,0.5)] z-10">
 
@@ -71,6 +74,31 @@ export default function BottomInterface({
             if (lesson.hiddenButtons?.includes(btn.value) && !discoveredButtons[btn.value]) {
               return null;
             }
+
+            if (btn.isInput) {
+              return (
+                <div key={i} className="flex gap-2 items-center">
+                  <input
+                    type="number"
+                    placeholder={btn.placeholder}
+                    value={pidValue}
+                    onChange={(e) => setPidValue(e.target.value)}
+                    className="bg-[#222] border border-[#444] text-white px-1.5 py-1 text-xs rounded focus:outline-none focus:border-blue-500 w-16 md:w-20 shadow-inner"
+                  />
+                  <button
+                    onClick={() => {
+                      if (pidValue) onType(pidValue);
+                      setPidValue("");
+                    }}
+                    disabled={!isTerminalOpen || !pidValue}
+                    className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white px-2 py-1 text-xs rounded font-bold transition-colors shadow-md active:scale-95"
+                  >
+                    Añadir PID
+                  </button>
+                </div>
+              );
+            }
+
             return (
               <button
                 key={i}

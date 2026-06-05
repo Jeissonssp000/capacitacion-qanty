@@ -114,7 +114,7 @@ const LS_SHORT = {
 };
 
 // ── Top / htop process table ─────────────────────────────
-export function buildTopOutput(isHtop, processAlive) {
+export function buildTopOutput(isHtop, processAlive, exampleProcessAlive = true) {
   const header = isHtop
     ? "  CPU[||||||||||||||||||||||||||||  99.3%]   Mem[||||||||||||||       5.8G/7.7G]\n  Tasks: 187, 12 thr; 2 running\n  Uptime: 02:30:15\n"
     : `top - 15:09:35 up 2:30,  1 user,  load average: 0.98, 0.75, 0.52
@@ -131,6 +131,11 @@ MiB Swap:   2048.0 total,   1536.0 free,    512.0 used
   if (processAlive) {
     rows.push(
       " 2026 root      20   0  99.3 41.2   8:42.13 proceso_basura"
+    );
+  }
+  if (exampleProcessAlive) {
+    rows.push(
+      "  123 root      20   0   0.0  0.0   0:00.01 proceso_ejemplo"
     );
   }
   rows.push(

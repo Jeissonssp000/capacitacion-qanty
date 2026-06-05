@@ -82,11 +82,12 @@ export default function App() {
   const [isInternetConnected, setIsInternetConnected] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
   const [explanation, setExplanation] = useState(null);
+  const [topProcessAlive, setTopProcessAlive] = useState(true);
+  const [exampleProcessAlive, setExampleProcessAlive] = useState(true);
 
   // ── Challenge state (persists across tab switches) ─────
   // Shape: { [lessonIndex]: { completed: bool, discovered: { [btnValue]: true } } }
   const [challengeState, setChallengeState] = useState({});
-  const [topProcessAlive, setTopProcessAlive] = useState(true);
 
   // ── Refs ────────────────────────────────────────────────
   const intervalRef = useRef(null);
@@ -256,14 +257,14 @@ export default function App() {
   const startTopCommand = (isHtop) => {
     topRef.current = true;
     setIsRunning(true);
-
     const ch3Idx = LESSONS.findIndex((l) => l.challengeId === "challenge_3");
+    const killLessonIdx = LESSONS.findIndex((l) => l.title.includes("kill") && !l.isChallenge);
 
-    // Discover kill/PID buttons for challenge 3
-    discoverButton(ch3Idx, "kill");
-    discoverButton(ch3Idx, "2026");
+    // Discover PID_INPUT for challenge 3 and 123 for the kill lesson
+    discoverButton(ch3Idx, "PID_INPUT");
+    if (killLessonIdx !== -1) discoverButton(killLessonIdx, "123");
 
-    const output = buildTopOutput(isHtop, topProcessAlive);
+    const output = buildTopOutput(isHtop, topProcessAlive, exampleProcessAlive);
     setHistory((prev) => [...prev, { text: output, isCommand: false }]);
 
     // Periodic refresh to simulate live monitoring
@@ -321,7 +322,6 @@ export default function App() {
         if (pingStatsRef.current) {
           stopPing(false);
         } else {
-          if (topRef.current) topRef.current = false;
           stopProcess();
           setHistory((prev) => [...prev, { text: "^C", isCommand: false }]);
         }
@@ -371,21 +371,44 @@ export default function App() {
         return;
       }
 
-      // kill 2026 (challenge 3 special case)
-      if (finalInput.match(/^kill\s+(-\d+\s+)?2026$/)) {
-        setExplanation(getExplanation("kill 2026"));
-        if (topProcessAlive) {
-          setTopProcessAlive(false);
-          setHistory((prev) => [
-            ...prev,
-            { text: "✓ Proceso 'proceso_basura' (PID 2026) terminado exitosamente.\nEl sistema ha vuelto a la normalidad.", isCommand: false },
-          ]);
-          const ch3Idx = LESSONS.findIndex((l) => l.challengeId === "challenge_3");
-          if (!getChallengeCompleted(ch3Idx)) markCompleted(ch3Idx);
+      // kill command logic
+      const killMatch = finalInput.match(/^kill\s+(?:-\d+\s+)?(\d+)$/);
+      if (killMatch) {
+        const pid = killMatch[1];
+        setExplanation(getExplanation("kill " + pid));
+        
+        if (pid === "2026") {
+          if (topProcessAlive) {
+            setTopProcessAlive(false);
+            setHistory((prev) => [
+              ...prev,
+              { text: "✓ Proceso 'proceso_basura' (PID 2026) terminado exitosamente.\nEl sistema ha vuelto a la normalidad.", isCommand: false },
+            ]);
+            const ch3Idx = LESSONS.findIndex((l) => l.challengeId === "challenge_3");
+            if (!getChallengeCompleted(ch3Idx)) markCompleted(ch3Idx);
+          } else {
+            setHistory((prev) => [
+              ...prev,
+              { text: `bash: kill: (${pid}) - No existe el proceso`, isCommand: false },
+            ]);
+          }
+        } else if (pid === "123") {
+          if (!topRef.current) {
+            setHistory((prev) => [
+              ...prev,
+              { text: "bash: kill: (123) - Primero ejecuta 'top' para identificar el proceso.", isCommand: false },
+            ]);
+          } else {
+            setExampleProcessAlive(false);
+            setHistory((prev) => [
+              ...prev,
+              { text: "✓ Se detuvo el proceso de ejemplo con PID 123 exitosamente.", isCommand: false },
+            ]);
+          }
         } else {
           setHistory((prev) => [
             ...prev,
-            { text: "bash: kill: (2026) - No existe el proceso", isCommand: false },
+            { text: `bash: kill: (${pid}) - Operación no permitida o proceso inexistente.`, isCommand: false },
           ]);
         }
         setCurrentInput("");
