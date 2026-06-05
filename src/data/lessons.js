@@ -63,6 +63,18 @@ export const LESSONS = [
       { label: "ls -a", value: "ls -a" },
     ],
   },
+  {
+    section: "carpetas",
+    title: "Leer archivos (cat)",
+    description:
+      "'cat' (concatenate) muestra el contenido de un archivo en la terminal. Es la forma más rápida de leer archivos de texto. Úsalo como 'cat nombre_del_archivo'.",
+    buttons: [
+      { label: "cat", value: "cat" },
+      { label: "archivo.txt", value: "archivo.txt" },
+      { label: "archivo.sh", value: "archivo.sh" },
+    ],
+  },
+
 
   // ── Section 4: Diagnóstico y Red ────────────────────────
   {
@@ -171,21 +183,7 @@ export const LESSONS = [
   },
   {
     section: "retos",
-    title: "Reto 2: Diagnóstico de Errores",
-    description:
-      "La tarjeta de red tiene demasiada información y es difícil encontrar nuestra dirección física (MAC); ejecuta 'ifconfig' combinado con 'grep' para filtrar únicamente la línea que contiene la palabra 'ether' y descubrir el código de acceso.",
-    buttons: [
-      { label: "ifconfig", value: "ifconfig" },
-      { label: "| grep", value: "| grep" },
-      { label: "ether", value: "ether" },
-    ],
-    isChallenge: true,
-    challengeId: "challenge_2",
-    hiddenButtons: ["| grep", "ether"],
-  },
-  {
-    section: "retos",
-    title: "Reto 3: El Administrador Intruso",
+    title: "Reto 2: Mal Rendimiento",
     description:
       "El sistema se ha puesto extremadamente lento debido a un proceso colgado que está consumiendo toda la memoria; abre el administrador de tareas con 'top' para identificar el ID (PID) del servicio malicioso y elimínalo usando 'kill'.",
     buttons: [

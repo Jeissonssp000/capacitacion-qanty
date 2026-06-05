@@ -7,11 +7,6 @@ import confetti from "canvas-confetti";
 import { LESSONS, SECTIONS } from "./data/lessons";
 import { mockCommandResponse, buildTopOutput } from "./data/commands";
 
-// ── Pre-compute challenge indices ────────────────────────
-const CH1_IDX = LESSONS.findIndex((l) => l.challengeId === "challenge_1");
-const CH2_IDX = LESSONS.findIndex((l) => l.challengeId === "challenge_2");
-const CH3_IDX = LESSONS.findIndex((l) => l.challengeId === "challenge_3");
-
 // ── Explanation resolver ─────────────────────────────────
 function getExplanation(cmd, extra = {}) {
   if (cmd === "clear")
@@ -105,7 +100,7 @@ export default function App() {
   const markCompleted = (idx) => {
     setChallengeState((prev) => ({
       ...prev,
-      [idx]: { ...prev[idx], completed: true },
+      [idx]: { ...prev[idx], completed: true, completedAt: new Date().toLocaleTimeString() },
     }));
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, zIndex: 1000 });
   };
@@ -262,9 +257,11 @@ export default function App() {
     topRef.current = true;
     setIsRunning(true);
 
+    const ch3Idx = LESSONS.findIndex((l) => l.challengeId === "challenge_3");
+
     // Discover kill/PID buttons for challenge 3
-    discoverButton(CH3_IDX, "kill");
-    discoverButton(CH3_IDX, "2026");
+    discoverButton(ch3Idx, "kill");
+    discoverButton(ch3Idx, "2026");
 
     const output = buildTopOutput(isHtop, topProcessAlive);
     setHistory((prev) => [...prev, { text: output, isCommand: false }]);
@@ -283,29 +280,22 @@ export default function App() {
 
   // ── Challenge discovery & completion checks ────────────
   const checkChallengeDiscovery = (cmd) => {
+    const ch1Idx = LESSONS.findIndex((l) => l.challengeId === "challenge_1");
+
     // Challenge 1: ls -a in ~/Documentos → reveal .secret_password.txt
     if (cmd.startsWith("ls") && cmd.includes("-a")) {
       if (currentDirectory === "~/Documentos" || cmd.includes("Documentos")) {
-        discoverButton(CH1_IDX, ".secret_password.txt");
+        discoverButton(ch1Idx, ".secret_password.txt");
       }
-    }
-
-    // Challenge 2: running ifconfig → reveal grep buttons
-    if (cmd === "ifconfig") {
-      discoverButton(CH2_IDX, "| grep");
-      discoverButton(CH2_IDX, "ether");
     }
   };
 
   const checkChallengeCompletion = (cmd, result) => {
+    const ch1Idx = LESSONS.findIndex((l) => l.challengeId === "challenge_1");
+
     // Challenge 1: cat .secret_password.txt in ~/Documentos
     if (cmd === "cat .secret_password.txt" && currentDirectory === "~/Documentos") {
-      if (!getChallengeCompleted(CH1_IDX)) markCompleted(CH1_IDX);
-    }
-
-    // Challenge 2: ifconfig | grep ether
-    if (cmd === "ifconfig | grep ether" && typeof result === "string" && result.includes("ether")) {
-      if (!getChallengeCompleted(CH2_IDX)) markCompleted(CH2_IDX);
+      if (!getChallengeCompleted(ch1Idx)) markCompleted(ch1Idx);
     }
   };
 
@@ -313,6 +303,11 @@ export default function App() {
   const handleAction = (action) => {
     if (action === "next_lesson") {
       setCurrentClass(Math.min(currentClass + 1, LESSONS.length - 1));
+      return;
+    }
+
+    if (action === "clear_input") {
+      setCurrentInput("");
       return;
     }
 
@@ -385,7 +380,8 @@ export default function App() {
             ...prev,
             { text: "✓ Proceso 'proceso_basura' (PID 2026) terminado exitosamente.\nEl sistema ha vuelto a la normalidad.", isCommand: false },
           ]);
-          if (!getChallengeCompleted(CH3_IDX)) markCompleted(CH3_IDX);
+          const ch3Idx = LESSONS.findIndex((l) => l.challengeId === "challenge_3");
+          if (!getChallengeCompleted(ch3Idx)) markCompleted(ch3Idx);
         } else {
           setHistory((prev) => [
             ...prev,
@@ -433,6 +429,7 @@ export default function App() {
   const currentLesson = LESSONS[currentClass];
   const currentChallengeCompleted = getChallengeCompleted(currentClass);
   const currentDiscovered = getDiscoveredButtons(currentClass);
+  const currentChallengeCompletedAt = challengeState[currentClass]?.completedAt;
 
   // ── Render ──────────────────────────────────────────────
   return (
@@ -476,6 +473,7 @@ export default function App() {
               currentDirectory={currentDirectory}
               explanation={explanation}
               challengeCompleted={currentChallengeCompleted}
+              challengeCompletedAt={currentChallengeCompletedAt}
               discoveredButtons={currentDiscovered}
               isLastLesson={currentClass === LESSONS.length - 1}
             />

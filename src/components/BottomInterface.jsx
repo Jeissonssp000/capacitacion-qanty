@@ -11,6 +11,7 @@ export default function BottomInterface({
   currentDirectory,
   explanation,
   challengeCompleted,
+  challengeCompletedAt,
   discoveredButtons,
   isLastLesson
 }) {
@@ -19,29 +20,37 @@ export default function BottomInterface({
 
       {/* Lesson Description */}
       <div className="mb-4 text-gray-300 text-sm md:text-base leading-relaxed pr-2">
-        <div className="flex items-center mb-1">
+        <div className="flex items-start mb-2 gap-3">
           <button
             onClick={onToggleSidebar}
-            className="w-8 h-8 mr-2 bg-[#2d2d2d] rounded-full shadow flex items-center justify-center text-white hover:bg-gray-700 transition-colors shrink-0"
+            className="w-8 h-8 bg-[#2d2d2d] rounded-full shadow flex items-center justify-center text-white hover:bg-gray-700 transition-colors shrink-0 mt-0.5"
           >
             {isSidebarOpen ? <VscClose size={18} /> : <VscMenu size={18} />}
           </button>
-          <div className="flex-1 flex items-center pr-2">
-            <h3 className="font-bold text-white text-lg flex items-center gap-3">
+          
+          <div className="flex-1 flex flex-wrap items-start md:items-center gap-2">
+            <h3 className="font-bold text-white text-base mt-1 md:mt-0">
               {lesson.title}
-              {lesson.isChallenge && (
-                <span className={`px-2 py-0.5 text-xs font-bold rounded-full transition-colors duration-300 ${
-                  challengeCompleted
-                    ? 'bg-green-500 text-black shadow-[0_0_10px_rgba(34,197,94,0.5)]'
-                    : 'bg-[#333] text-gray-400 border border-[#555]'
-                }`}>
-                  {challengeCompleted ? '[✓] ¡Completado!' : '[ ] Incompleto'}
-                </span>
-              )}
             </h3>
+            {lesson.isChallenge && (
+              <div className="flex flex-col items-center mt-1">
+                <span className={`px-2 py-0.5 text-[10px] md:text-xs font-bold rounded-full transition-colors duration-300 uppercase tracking-wide leading-none ${
+                  challengeCompleted
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.15)]'
+                    : 'bg-[#222] text-gray-500 border border-[#444]'
+                }`}>
+                  {challengeCompleted ? '¡Completado!' : 'Incompleto'}
+                </span>
+                {challengeCompleted && challengeCompletedAt && (
+                  <span className="text-[9px] text-gray-500 font-mono mt-1 leading-none">
+                    {challengeCompletedAt}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
-        <p>{lesson.description}</p>
+        <p className="text-gray-400">{lesson.description}</p>
       </div>
 
       {explanation && (
@@ -98,6 +107,15 @@ export default function BottomInterface({
           ctrl + c (cancelar)
         </button>
         <button
+          onClick={() => isTerminalOpen && onAction('clear_input')}
+          disabled={!isTerminalOpen}
+          className={`py-2 md:py-3 px-3 rounded font-bold transition-all active:scale-95 shadow-lg text-xs md:text-sm ${
+            isTerminalOpen ? 'bg-amber-700 hover:bg-amber-600 text-white' : 'bg-gray-800 text-gray-600'
+          }`}
+        >
+          ✕ Borrar
+        </button>
+        <button
           onClick={() => isTerminalOpen && onAction('enter')}
           disabled={!isTerminalOpen}
           className={`flex-1 py-2 md:py-3 rounded font-bold transition-all active:scale-95 shadow-lg text-xs md:text-sm ${
@@ -111,7 +129,7 @@ export default function BottomInterface({
              onClick={() => onAction('next_lesson')}
              className="flex-1 py-2 md:py-3 rounded font-bold shadow-lg text-xs md:text-sm bg-gradient-to-r from-green-400 to-emerald-600 hover:from-green-500 hover:to-emerald-700 text-white animate-[fadeIn_0.5s_ease-out] transition-all active:scale-95"
           >
-            Siguiente Reto →
+            Siguiente Reto
           </button>
         )}
       </div>
